@@ -1,0 +1,220 @@
+
+function TSudoku.DFSBlanking(count: longint; dif: TDifficulty): boolean;
+var
+	i, j, k, top: longint;
+	WorkDone: boolean;
+	sd: TSudoku;
+  st: array[1..81] of longint;
+begin
+	sd := TSudoku.Create;
+	sd.CopyFrom(Self);
+//Check if solvable;
+	sd.SimpleSolve;
+	case dif of
+		Easy, Normal: begin
+			if not sd.CheckComplete then exit(false);
+		end;
+		Hard, Ace: begin
+			if not sd.CheckComplete then begin
+        MultiSolution := false;
+				if not sd.DFSSolve(true) then begin
+        end;
+				if MultiSolution then begin
+          exit(false);
+        end else if count <= 35 then begin
+          DFSDeepBlk(3);
+        end;
+			end;
+		end;
+	end;
+
+  FillChar(st, SizeOf(st), 0);
+  top := 1;
+  for i := 1 to 9 do begin
+    for j := 1 to 9 do begin
+      if Num[i, j] <> 0 then begin
+        st[top] := (i - 1) * 9 + j;
+        inc(top);
+      end;
+    end;
+  end;
+  MixArray(st, top - 1);
+  for k := 1 to top - 1 do begin
+    i := (st[k] - 1) div 9 + 1;
+    j := (st[k] - 1) mod 9 + 1;
+    sd.CopyFrom(Self);
+    with sd do begin
+			FillGrid(i, j, 0);
+			ResetDraft;
+			RenewDraft;
+		end;
+		if (dif = Easy) and (count <= 40) then begin
+			SdkSolution.CopyFrom(sd);
+			GnrComplete := true;
+			exit(true);
+		end else
+		if not sd.DFSBlanking(count - 1, dif) then begin
+			case dif of
+				Normal: begin
+					if count <=35 then begin
+						SdkSolution.CopyFrom(Self);
+						GnrComplete := true;
+					end;
+				end;
+				Hard, ACE: begin
+          {
+					if count <= 30 then begin
+            DFSDeepBlk(2);
+					end;
+          }
+				end;
+			end;
+		end;
+		if GnrComplete then break;
+	end;
+	exit(true);
+//Loop for DFS;
+{
+	WorkDone := false;
+	while not WorkDone do begin
+		sd.CopyFrom(Self);
+		repeat
+			i := random(9) + 1;
+			j := random(9) + 1;
+		until Num[i, j] <> 0;
+		with sd do begin
+			FillGrid(i, j, 0);
+			ResetDraft;
+			RenewDraft;
+		end;
+		if (dif = Easy) and (count <= 40) then begin
+			SdkSolution.CopyFrom(sd);
+			GnrComplete := true;
+			exit(true);
+		end else
+		if not sd.DFSBlanking(count - 1, dif) then begin
+			case dif of
+				Normal: begin
+					if count <=35 then begin
+						SdkSolution.CopyFrom(Self);
+						GnrComplete := true;
+					end;
+				end;
+				Hard, ACE: begin
+					if count <= 27 then begin
+            DFSDeepBlk(2);
+					end;
+				end;
+			end;
+		end;
+		if GnrComplete then WorkDone := true;
+	end;
+	exit(true);
+  }
+end;
+
+function TSudoku.DFSDeepBlk(count: Integer): boolean;
+var
+	i, j, k, top, nextcount: longint;
+	WorkDone: boolean;
+	sd: TSudoku;
+  st: array[1..81] of longint;
+begin
+  sd := TSudoku.Create;
+	sd.CopyFrom(Self);
+	sd.SimpleSolve;
+
+  if not sd.CheckComplete then begin
+    MultiSolution := false;
+    if sd.DFSSolve(true) then begin
+      //SdkPanel.ShowSudoku(sd, true);
+      //ShowMessage('ERROR: failure in Generating puzzle.');
+
+      if MultiSolution then begin
+        exit(false);
+      end else begin
+        nextcount := count - 1;
+        //ShowMessage('Here');
+      end;
+    end;
+  end else begin
+    //nextcount := count;
+    //ÎÒÍ×Ð­ÁË¡£¡£¡£
+    nextcount := count - 1;
+  end;
+  FillChar(st, SizeOf(st), 0);
+  top := 1;
+  for i := 1 to 9 do begin
+    for j := 1 to 9 do begin
+      if Num[i, j] <> 0 then begin
+        st[top] := (i - 1) * 9 + j;
+        inc(top);
+      end;
+    end;
+  end;
+  if top <= 17 then exit(true);
+  //ShowMessage(IntToStr(top) + ' ' + IntToStr(count));
+  MixArray(st, top - 1);
+  for k := 1 to top - 1 do begin
+    i := (st[k] - 1) div 9 + 1;
+    j := (st[k] - 1) mod 9 + 1;
+
+    //test
+    if Num[i, j] = 0 then
+      ShowMessage('Jude.');
+
+    sd.CopyFrom(Self);
+    with sd do begin
+			FillGrid(i, j, 0);
+			ResetDraft;
+			RenewDraft;
+		end;
+		if not sd.DFSDeepBlk(count - 1) then begin
+      if count <= 0 then begin
+        SdkSolution.CopyFrom(Self);
+        GnrComplete := true;
+			end;
+		end;
+    if GnrComplete then break;
+	end;
+	exit(true);
+
+  {
+  WorkDone := false;
+	while not WorkDone do begin
+
+    WorkDone := true;
+    for i := 1 to 9 do begin
+      for j := 1 to 9 do begin
+        if Num[i, j] = 0 then flags[i, j] := true
+        else if not flags[i, j] then begin
+          WorkDone := false;
+          break;
+        end;
+      end;
+      if not WorkDone then break;
+    end;
+
+    if WorkDone then break;
+
+		sd.CopyFrom(Self);
+		repeat
+			i := random(9) + 1;
+			j := random(9) + 1;
+		until Num[i, j] <> 0;
+		with sd do begin
+			FillGrid(i, j, 0);
+			ResetDraft;
+			RenewDraft;
+		end;
+		if not sd.DFSDeepBlk(count - 1) then begin
+      if count <= 0 then begin
+        SdkSolution.CopyFrom(Self);
+        GnrComplete := true;
+			end;
+		end;
+		if GnrComplete then WorkDone := true;
+	end;
+	exit(true);
+  }
+end;
